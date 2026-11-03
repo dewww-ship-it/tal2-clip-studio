@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: tal2-clip-studio
+    runtime: docker
+    plan: starter
+    region: singapore
+    healthCheckPath: /healthz
+    envVars:
+      - key: MAX_JOBS
+        value: "4"
+      - key: PYTHONUNBUFFERED
+        value: "1"

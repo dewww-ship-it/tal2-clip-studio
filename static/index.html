@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f8f7f4"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>CLIP STUDIO · 탤2짱</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#292925;background:#f8f7f4}
+*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 16px calc(32px + env(safe-area-inset-bottom))}.app{max-width:530px;margin:0 auto}
+header{padding:35px 0 25px}h1{font-family:Georgia,serif;font-size:32px;letter-spacing:-1.2px;margin:0}header p{color:#88857e;margin:8px 0 0;font-size:13px}
+.card{background:#fff;border:1px solid #eae7e1;border-radius:19px;padding:19px;margin:13px 0;box-shadow:0 3px 14px #3331}
+.label{font-size:13px;font-weight:700;margin-bottom:10px;display:block}.sub{font-size:12px;color:#88857e;line-height:1.6}
+.drop{border:1.5px dashed #c7c2b8;border-radius:15px;background:#faf9f7;padding:28px 14px;text-align:center;cursor:pointer;display:block}
+.drop strong{display:block;font-size:15px;margin-bottom:7px}.drop span{font-size:12px;color:#8a867e}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0}input[type=text],textarea,select{width:100%;border:1px solid #e5e2dc;border-radius:12px;background:#fbfaf8;font:inherit;padding:12px;color:#302e2a;font-size:16px}
+textarea{min-height:136px;resize:vertical;line-height:1.65}.thumbs{display:flex;gap:7px;overflow:auto;padding-top:12px}.thumb{position:relative;flex:0 0 66px;height:80px;background:#eae8e3;border-radius:9px;overflow:hidden}
+.thumb img,.thumb video{width:100%;height:100%;object-fit:cover}.thumb b{position:absolute;bottom:4px;left:5px;color:white;text-shadow:0 1px 4px black;font-size:10px}
+button{width:100%;border:0;border-radius:13px;background:#262925;color:#fff;padding:17px 10px;font-size:15px;font-weight:700;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}.tip{font-size:12px;color:#77736b;line-height:1.6}
+#result{display:none}#result video{display:block;max-height:570px;aspect-ratio:9/16;width:auto;max-width:100%;margin:0 auto 16px;border-radius:12px;background:#222}
+progress{width:100%;height:12px;accent-color:#5c7164}a.download{display:block;text-decoration:none;text-align:center;border-radius:13px;background:#526a59;color:white;padding:16px;font-size:15px;font-weight:700}
+footer{text-align:center;color:#aaa59b;font-size:11px;padding:18px 0}#error{color:#b14545;font-size:13px;white-space:pre-wrap}
+</style>
+</head>
+<body><main class="app">
+<header><h1>CLIP STUDIO</h1><p>by 탤2짱 · 사진과 영상으로 만드는 20초 네이버 클립 🤍</p></header>
+<form id="form">
+<section class="card"><label class="label">01 · 사진과 영상 선택</label>
+<label class="drop" for="files"><strong>＋ 아이폰 사진첩에서 선택</strong><span>사진·영상 최대 18개 · 여러 개 동시 선택 가능</span></label>
+<input id="files" type="file" name="files" accept="image/*,video/*,.heic,.heif,.mov" multiple required>
+<div class="thumbs" id="thumbs"></div><p class="sub" id="fileCount">선택한 파일 없음</p></section>
+<section class="card"><label class="label" for="title">02 · 클립 주제</label>
+<input type="text" id="title" name="title" value="오늘의 작은 발견" maxlength="80">
+<p class="sub">영상의 주제를 적어 주세요. 자동 자막은 아래에서 수정할 수 있어요.</p></section>
+<section class="card"><label class="label" for="captions">03 · 자동 배치할 자막</label>
+<textarea id="captions" name="captions" placeholder="비워 두면 주제에 맞는 기본 자막을 넣어요.
+장소·가격·사용 팁 등 정확한 정보는 직접 적어 주세요."></textarea>
+<p class="sub">한 줄에 자막 하나씩 · 완성 후 장면별 수정 가능 · 각 65자 이하</p></section>
+<section class="card"><label class="label">04 · 화질과 배경음악</label>
+<div class="row"><select name="quality" aria-label="화질"><option value="high">고화질 · 1080 × 1920</option><option value="standard">빠른 제작 · 720 × 1280</option></select>
+<label class="drop" for="music" style="padding:12px 4px;flex:1"><strong style="font-size:12px;margin:0">♪ 음악 선택 (선택)</strong></label></div>
+<input type="file" id="music" name="music" accept="audio/*,.mp3,.m4a,.wav,.aac">
+<p class="sub" id="musicName">음악 없이도 제작 가능해 · 직접 사용 권한이 있는 음악을 넣어줘</p></section>
+<button type="submit" id="make">✨ 20초 클립 자동 제작하기</button><p id="error" role="alert"></p>
+</form>
+<section class="card" id="progressCard" style="display:none"><label class="label">편집 중이야 🎬</label><progress id="progress" value="0" max="100"></progress><p class="sub" id="statusText" aria-live="polite">준비 중</p></section>
+<section class="card" id="result"><label class="label">20초 클립 완성! 🤍</label><video id="player" controls playsinline preload="metadata"></video>
+<div id="sceneEditor"></div><button type="button" id="edit" style="margin:12px 0">자막 수정 반영해 다시 만들기</button><a class="download" id="download" href="#">MP4 저장하기 ↓</a><p class="tip">아이폰에서는 영상을 연 뒤 공유 메뉴에서 비디오 저장을 선택할 수도 있어</p></section>
+<footer>20 SEC · 9:16 · H.264 MP4<br>최대 18개 중 품질을 기준으로 최대 10장면을 선정해요.<br>작업 링크를 아는 사람은 영상을 볼 수 있어요. 서버 파일은 24시간 후 정리됩니다.</footer>
+</main>
+<script>
+const $=s=>document.querySelector(s), form=$('#form'), fileInput=$('#files');
+let currentJob=localStorage.getItem('tal2-job'), polling=false, urls=[];
+const showError=e=>$('#error').textContent=e.message||String(e);
+fileInput.addEventListener('change',()=>{
+  urls.forEach(URL.revokeObjectURL);urls=[];$('#thumbs').replaceChildren();
+  const files=[...fileInput.files];
+  $('#fileCount').textContent=`${files.length}/18개 · ${(files.reduce((n,f)=>n+f.size,0)/1024/1024).toFixed(1)}MB / 400MB`;
+  files.slice(0,18).forEach((file,i)=>{
+    const box=document.createElement('div');box.className='thumb';
+    const video=file.type.startsWith('video')||/\.(mov|mp4|m4v|webm)$/i.test(file.name);
+    const el=document.createElement(video?'video':'img');
+    el.src=URL.createObjectURL(file);urls.push(el.src);el.alt=file.name;
+    if(video){el.muted=true;el.playsInline=true;el.preload='metadata'}
+    const label=document.createElement('b');label.textContent=`${i+1} ${video?'영상':'사진'}`;
+    el.onerror=()=>{el.remove();box.style.background='#718372'};
+    box.append(el,label);$('#thumbs').append(box);
+  });
+});
+$('#music').onchange=e=>$('#musicName').textContent=e.target.files[0]?.name||'음악 없음';
+async function jsonRequest(url,options){
+  const response=await fetch(url,options);let data;
+  try{data=await response.json()}catch{throw Error('서버 응답을 받지 못했어요. 잠시 후 다시 시도해 주세요.')}
+  if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'요청 내용을 확인해 주세요.');
+  return data;
+}
+function result(data){
+  $('#player').src=data.preview;$('#download').href=data.url;$('#sceneEditor').replaceChildren();
+  (data.scenes||[]).forEach((scene,i)=>{
+    const label=document.createElement('label');label.className='label';
+    label.textContent=`장면 ${i+1} · 원본 ${scene.original_index}번 · ${(scene.frames/24).toFixed(1)}초`;
+    const input=document.createElement('textarea');input.value=scene.caption;input.maxLength=65;input.style.minHeight='80px';
+    input.setAttribute('aria-label',`장면 ${i+1} 자막`);$('#sceneEditor').append(label,input);
+  });
+  $('#result').style.display='block';$('#progressCard').style.display='none';
+}
+async function poll(){
+  if(polling||!currentJob)return;polling=true;$('#make').disabled=true;$('#edit').disabled=true;
+  $('#progressCard').style.display='block';let failures=0;
+  try{
+    while(true){
+      let data;
+      try{data=await jsonRequest('/api/status/'+currentJob);failures=0}
+      catch(error){if(++failures>8)throw error;$('#statusText').textContent='연결을 다시 시도하고 있어요. 이 화면에서 기다려 주세요.';await new Promise(r=>setTimeout(r,4000));continue}
+      $('#progress').value=data.progress||0;$('#statusText').textContent=data.message;
+      if(data.status==='error')throw Error(data.message);
+      if(data.status==='done'){result(data);break}
+      await new Promise(r=>setTimeout(r,2000));
+    }
+  }catch(e){showError(e);$('#progressCard').style.display='none'}
+  finally{polling=false;$('#make').disabled=false;$('#edit').disabled=false}
+}
+form.onsubmit=async e=>{
+  e.preventDefault();$('#error').textContent='';
+  const files=[...fileInput.files], music=$('#music').files[0];
+  if(!files.length||files.length>18){showError(Error('사진·영상은 1~18개를 선택해 주세요'));return}
+  if(files.reduce((n,f)=>n+f.size,0)+(music?.size||0)>400*1024*1024){showError(Error('음악을 포함해 400MB 이하로 선택해 주세요'));return}
+  $('#make').disabled=true;$('#result').style.display='none';$('#progressCard').style.display='block';$('#progress').value=0;
+  $('#statusText').textContent='업로드 중 · Safari를 켜 두세요';
+  try{
+    const data=await new Promise((resolve,reject)=>{
+      const xhr=new XMLHttpRequest();xhr.open('POST','/api/create');xhr.responseType='json';xhr.timeout=600000;
+      xhr.upload.onprogress=e=>{if(e.lengthComputable)$('#statusText').textContent=`업로드 ${Math.round(e.loaded/e.total*100)}% · Safari를 켜 두세요`};
+      xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve(xhr.response):reject(Error(xhr.response?.detail||'업로드 실패. 파일 크기와 형식을 확인해 주세요.'));
+      xhr.onerror=()=>reject(Error('네트워크 연결을 확인해 주세요'));xhr.ontimeout=()=>reject(Error('업로드 시간이 초과됐어요. 파일 수를 줄여 다시 시도해 주세요.'));
+      xhr.send(new FormData(form));
+    });
+    currentJob=data.job_id;localStorage.setItem('tal2-job',currentJob);await poll();
+  }catch(e){showError(e);$('#progressCard').style.display='none'}finally{$('#make').disabled=false}
+};
+$('#edit').onclick=async()=>{
+  $('#error').textContent='';$('#edit').disabled=true;
+  try{await jsonRequest('/api/edit/'+currentJob,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({captions:[...document.querySelectorAll('#sceneEditor textarea')].map(e=>e.value)})});await poll()}
+  catch(e){showError(e)}finally{$('#edit').disabled=false}
+};
+if(currentJob)poll();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentJob&&!polling)poll()});
+</script>
+</body></html>
